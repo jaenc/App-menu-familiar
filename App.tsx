@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
-import { v4 as uuidv4 } from 'uuid';
 import { auth, googleProvider, isFirebaseConfigured } from './services/firebase';
 import * as firestoreService from './services/firestoreService';
 import type { MenuPlan, Profile, UserRecipe } from './types';
@@ -16,10 +15,9 @@ import ShoppingListModal from './Components/ShoppingListModal';
 import ProfilesTab from './Components/ProfilesTab';
 import RecipesTab from './Components/RecipesTab';
 import SpinnerIcon from './Components/icons/SpinnerIcon';
-import DemoModeBanner from './Components/DemoModeBanner';
+import ConfigErrorScreen from './Components/ConfigErrorScreen';
 
 const isGeminiConfigured = !!process.env.GEMINI_API_KEY;
-const isDemoMode = !isFirebaseConfigured || !isGeminiConfigured;
 
 const App: React.FC = () => {
     type Tab = 'generator' | 'profiles' | 'recipes';
@@ -27,13 +25,13 @@ const App: React.FC = () => {
     
     // Auth state
     const [user, setUser] = useState<User | null>(null);
-    const [authLoading, setAuthLoading] = useState(!isDemoMode);
+    const [authLoading, setAuthLoading] = useState(true);
     const [loginLoading, setLoginLoading] = useState(false);
     
     // App state
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]);
-    const [dataLoading, setDataLoading] = useState(!isDemoMode);
+    const [dataLoading, setDataLoading] = useState(true);
 
     const [menuPlan, setMenuPlan] = useState<MenuPlan | null>(null);
     const [isGeneratingMenu, setIsGeneratingMenu] = useState(false);
@@ -44,9 +42,8 @@ const App: React.FC = () => {
     
     // Auth effect
     useEffect(() => {
-        if (isDemoMode || !auth) {
+        if (!auth) {
             setAuthLoading(false);
-            setDataLoading(false);
             return;
         };
 
@@ -78,10 +75,10 @@ const App: React.FC = () => {
     }, []);
 
     const handleLogin = async () => {
-        if (isDemoMode) return;
+        if (!auth || !googleProvider) return;
         setLoginLoading(true);
         try {
-            await signInWithPopup(auth!, googleProvider!);
+            await signInWithPopup(auth, googleProvider);
         } catch (error) {
             console.error("Authentication error:", error);
             setError("No se pudo iniciar sesión. Por favor, inténtalo de nuevo.");
@@ -91,74 +88,48 @@ const App: React.FC = () => {
     };
 
     const handleLogout = async () => {
-        if (isDemoMode || !auth) return;
+        if (!auth) return;
         await signOut(auth);
     };
 
     // CRUD handlers
     const handleAddProfile = async (newProfile: Omit<Profile, 'id'>) => {
-        if (isDemoMode) {
-            setProfiles(prev => [...prev, { ...newProfile, id: uuidv4() }]);
-            return;
-        }
         if (!user) return;
         const addedProfile = await firestoreService.addProfile(user.uid, newProfile);
         setProfiles(prev => [...prev, addedProfile]);
     };
 
     const handleUpdateProfile = async (updatedProfile: Profile) => {
-        if (isDemoMode) {
-            setProfiles(prev => prev.map(p => (p.id === updatedProfile.id ? updatedProfile : p)));
-            return;
-        }
         if (!user) return;
         await firestoreService.updateProfile(user.uid, updatedProfile);
         setProfiles(prev => prev.map(p => (p.id === updatedProfile.id ? updatedProfile : p)));
     };
 
     const handleDeleteProfile = async (id: string) => {
-        if (isDemoMode) {
-            setProfiles(prev => prev.filter(p => p.id !== id));
-            return;
-        }
         if (!user) return;
         await firestoreService.deleteProfile(user.uid, id);
         setProfiles(prev => prev.filter(p => p.id !== id));
     };
 
     const handleAddRecipe = async (newRecipe: Omit<UserRecipe, 'id'>) => {
-        if (isDemoMode) {
-            setUserRecipes(prev => [...prev, { ...newRecipe, id: uuidv4() }]);
-            return;
-        }
         if (!user) return;
         const addedRecipe = await firestoreService.addUserRecipe(user.uid, newRecipe);
         setUserRecipes(prev => [...prev, addedRecipe]);
     };
 
     const handleDeleteRecipe = async (id: string) => {
-        if (isDemoMode) {
-            setUserRecipes(prev => prev.filter(r => r.id !== id));
-            return;
-        }
         if (!user) return;
         await firestoreService.deleteUserRecipe(user.uid, id);
         setUserRecipes(prev => prev.filter(r => r.id !== id));
     };
     
     const handleImportRecipes = async (importedRecipes: Omit<UserRecipe, 'id'>[]) => {
-        if (isDemoMode) {
-            const newRecipesWithIds = importedRecipes.map(r => ({ ...r, id: uuidv4() }));
-            setUserRecipes(prev => [...prev, ...newRecipesWithIds]);
-            return;
-        }
         if (!user) return;
         const newRecipesWithIds = await firestoreService.importUserRecipes(user.uid, importedRecipes);
         setUserRecipes(prev => [...prev, ...newRecipesWithIds]);
     };
 
     const handleGenerateMenu = async (startDate: string, duration: number, preferences: string, includeBreakfasts: boolean) => {
-        if (isDemoMode) return;
         setIsGeneratingMenu(true);
         setError(null);
         setMenuPlan(null);
@@ -174,7 +145,7 @@ const App: React.FC = () => {
     };
 
     const renderContent = () => {
-        if (dataLoading && !isDemoMode) {
+        if (dataLoading) {
             return (
                 <div className="flex justify-center items-center h-64">
                     <SpinnerIcon className="w-12 h-12 text-indigo-600" />
@@ -185,7 +156,7 @@ const App: React.FC = () => {
             case 'generator':
                 return (
                     <div className="flex flex-col lg:flex-row gap-8 w-full">
-                        <ConfigPanel onGenerate={handleGenerateMenu} isLoading={isGeneratingMenu} isDemoMode={isDemoMode} />
+                        <ConfigPanel onGenerate={handleGenerateMenu} isLoading={isGeneratingMenu} />
                         <MenuDisplay 
                             menuPlan={menuPlan}
                             isLoading={isGeneratingMenu}
@@ -202,7 +173,6 @@ const App: React.FC = () => {
                         onAddProfile={handleAddProfile}
                         onUpdateProfile={handleUpdateProfile}
                         onDeleteProfile={handleDeleteProfile}
-                        isDemoMode={isDemoMode}
                     />
                 );
             case 'recipes':
@@ -212,7 +182,6 @@ const App: React.FC = () => {
                         onAddRecipe={handleAddRecipe}
                         onDeleteRecipe={handleDeleteRecipe}
                         onImportRecipes={handleImportRecipes}
-                        isDemoMode={isDemoMode}
                     />
                 );
             default:
@@ -234,7 +203,11 @@ const App: React.FC = () => {
         </button>
     );
 
-    if (authLoading && !isDemoMode) {
+    if (!isFirebaseConfigured || !isGeminiConfigured) {
+        return <ConfigErrorScreen />;
+    }
+
+    if (authLoading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
                 <SpinnerIcon className="w-16 h-16 text-indigo-600" />
@@ -242,40 +215,29 @@ const App: React.FC = () => {
         );
     }
     
-    if (!user && !isDemoMode) {
+    if (!user) {
         return <LoginScreen onLogin={handleLogin} isLoading={loginLoading} />;
     }
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-            {isDemoMode && <DemoModeBanner />}
             <header className="bg-white shadow-sm sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
                      <h1 className="text-xl font-bold text-gray-900">
                         Comida<span className="text-indigo-600">A</span>Casa
                     </h1>
                     <div className="flex items-center gap-4">
-                        {isDemoMode ? (
-                             <button
-                                disabled
-                                title="El inicio de sesión está deshabilitado. Configura tus claves de API en .env.local para activarlo."
-                                className="px-3 py-1.5 text-sm font-medium text-white bg-gray-400 border border-transparent rounded-md cursor-not-allowed"
+                       <>
+                            <span className="text-sm text-gray-600">
+                                Hola, <span className="font-medium">{user?.displayName || 'Usuario'}</span>
+                            </span>
+                            <button
+                                onClick={handleLogout}
+                                className="px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-100 border border-transparent rounded-md hover:bg-indigo-200"
                             >
-                                Iniciar Sesión
+                                Cerrar Sesión
                             </button>
-                        ) : (
-                           <>
-                                <span className="text-sm text-gray-600">
-                                    Hola, <span className="font-medium">{user?.displayName || 'Usuario'}</span>
-                                </span>
-                                <button
-                                    onClick={handleLogout}
-                                    className="px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-100 border border-transparent rounded-md hover:bg-indigo-200"
-                                >
-                                    Cerrar Sesión
-                                </button>
-                            </>
-                        )}
+                        </>
                     </div>
                 </div>
             </header>

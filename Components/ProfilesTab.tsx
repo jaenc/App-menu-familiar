@@ -10,10 +10,9 @@ interface ProfilesTabProps {
   onAddProfile: (newProfile: Omit<Profile, 'id'>) => void;
   onUpdateProfile: (updatedProfile: Profile) => void;
   onDeleteProfile: (id: string) => void;
-  isDemoMode: boolean;
 }
 
-const ProfilesTab: React.FC<ProfilesTabProps> = ({ profiles, onAddProfile, onUpdateProfile, onDeleteProfile, isDemoMode }) => {
+const ProfilesTab: React.FC<ProfilesTabProps> = ({ profiles, onAddProfile, onUpdateProfile, onDeleteProfile }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
 
@@ -43,11 +42,6 @@ const ProfilesTab: React.FC<ProfilesTabProps> = ({ profiles, onAddProfile, onUpd
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 w-full max-w-4xl">
-      {isDemoMode && (
-        <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-sm">
-          <strong>Modo Demostración:</strong> Los perfiles que añadas aquí no se guardarán permanentemente.
-        </div>
-      )}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Perfiles Familiares</h2>
         <button

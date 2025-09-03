@@ -8,10 +8,9 @@ interface RecipesTabProps {
   onAddRecipe: (newRecipe: Omit<UserRecipe, 'id'>) => void;
   onDeleteRecipe: (id: string) => void;
   onImportRecipes: (importedRecipes: Omit<UserRecipe, 'id'>[]) => void;
-  isDemoMode: boolean;
 }
 
-const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteRecipe, onImportRecipes, isDemoMode }) => {
+const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteRecipe, onImportRecipes }) => {
   const [recipeName, setRecipeName] = useState('');
   const [ingredients, setIngredients] = useState('');
   const [fileName, setFileName] = useState('');
@@ -84,11 +83,6 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 w-full max-w-4xl space-y-8">
-      {isDemoMode && (
-        <div className="p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-sm">
-          <strong>Modo Demostración:</strong> Las recetas que añadas aquí no se guardarán permanentemente.
-        </div>
-      )}
       <div>
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Recetas Familiares</h2>
         <form onSubmit={handleAddSubmit} className="p-4 border rounded-lg bg-gray-50 space-y-4">
@@ -116,7 +110,7 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
             />
           </div>
           <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Añadir Receta</button>
-           {error && !isDemoMode && <p className="text-red-500 text-sm mt-2">{error}</p>}
+           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         </form>
       </div>
 
@@ -130,7 +124,7 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
           <span className="ml-3 text-gray-600">{fileName || 'No se ha seleccionado ningún archivo'}</span>
         </div>
         <p className="text-xs text-gray-500 mt-2">El CSV debe tener dos columnas: "nombre" e "ingredientes".</p>
-        {error && isDemoMode && <p className="text-red-500 text-sm mt-2">{error}</p>}
+        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </div>
 
       <div>

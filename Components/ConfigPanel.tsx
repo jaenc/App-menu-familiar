@@ -5,10 +5,9 @@ import SpinnerIcon from './icons/SpinnerIcon';
 interface ConfigPanelProps {
   onGenerate: (startDate: string, duration: number, preferences: string, includeBreakfasts: boolean) => void;
   isLoading: boolean;
-  isDemoMode: boolean;
 }
 
-const ConfigPanel: React.FC<ConfigPanelProps> = ({ onGenerate, isLoading, isDemoMode }) => {
+const ConfigPanel: React.FC<ConfigPanelProps> = ({ onGenerate, isLoading }) => {
   const today = new Date();
   today.setDate(today.getDate() + 1); // Default to tomorrow
   const [startDate, setStartDate] = useState(today.toISOString().split('T')[0]);
@@ -18,7 +17,6 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({ onGenerate, isLoading, isDemo
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isDemoMode) return;
     onGenerate(startDate, parseInt(duration, 10), preferences, includeBreakfasts);
   };
 
@@ -82,8 +80,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({ onGenerate, isLoading, isDemo
         <div>
           <button
             type="submit"
-            disabled={isLoading || isDemoMode}
-            title={isDemoMode ? "La generación con IA está deshabilitada en el modo de demostración." : ""}
+            disabled={isLoading}
             className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? <SpinnerIcon /> : 'Generar Menú con IA'}
