@@ -17,7 +17,8 @@ import RecipesTab from './Components/RecipesTab';
 import SpinnerIcon from './Components/icons/SpinnerIcon';
 import ConfigErrorScreen from './Components/ConfigErrorScreen';
 
-const isGeminiConfigured = !!process.env.GEMINI_API_KEY;
+// Check for the VITE_API_KEY from .env.local
+const isGeminiConfigured = !!import.meta.env.VITE_API_KEY;
 
 const App: React.FC = () => {
     type Tab = 'generator' | 'profiles' | 'recipes';
