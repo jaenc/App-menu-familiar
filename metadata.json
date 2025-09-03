@@ -1,0 +1,5 @@
+{
+  "name": "App menús en casa",
+  "description": "An intelligent meal planner application that generates weekly personalized menus using AI. It provides detailed recipes and creates an interactive shopping list to streamline your meal preparation.",
+  "requestFramePermissions": []
+}
