@@ -1,8 +1,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { MenuPlan, Recipe, ShoppingListItem, Profile, UserRecipe } from '../types';
 
-// Correct way to access the API key as defined in vite.config.ts
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY  });
+// Initialize with the VITE_API_KEY from .env.local
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
 
 const recipeGenerationSchema = {
     type: Type.OBJECT,
