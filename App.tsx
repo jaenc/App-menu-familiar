@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
+// Fix: Separated value and type imports for Firebase auth to resolve module resolution errors.
+import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from './services/firebase';
 import * as firestoreService from './services/firestoreService';
 import type { MenuPlan, Profile, UserRecipe } from './types';
@@ -74,6 +76,12 @@ const App: React.FC = () => {
         });
         return () => unsubscribe();
     }, []);
+    
+    // Clear error on tab change
+    useEffect(() => {
+        setError(null);
+    }, [activeTab]);
+
 
     const handleLogin = async () => {
         if (!auth || !googleProvider) return;
@@ -82,7 +90,6 @@ const App: React.FC = () => {
             await signInWithPopup(auth, googleProvider);
         } catch (error) {
             console.error("Authentication error:", error);
-            setError("No se pudo iniciar sesión. Por favor, inténtalo de nuevo.");
         } finally {
             setLoginLoading(false);
         }
@@ -96,38 +103,74 @@ const App: React.FC = () => {
     // CRUD handlers
     const handleAddProfile = async (newProfile: Omit<Profile, 'id'>) => {
         if (!user) return;
-        const addedProfile = await firestoreService.addProfile(user.uid, newProfile);
-        setProfiles(prev => [...prev, addedProfile]);
+        try {
+            const addedProfile = await firestoreService.addProfile(user.uid, newProfile);
+            setProfiles(prev => [...prev, addedProfile]);
+        } catch (e) {
+            const message = e instanceof Error ? e.message : "No se pudo añadir el perfil.";
+            console.error("Error adding profile:", e);
+            setError(message);
+        }
     };
 
     const handleUpdateProfile = async (updatedProfile: Profile) => {
         if (!user) return;
-        await firestoreService.updateProfile(user.uid, updatedProfile);
-        setProfiles(prev => prev.map(p => (p.id === updatedProfile.id ? updatedProfile : p)));
+        try {
+            await firestoreService.updateProfile(user.uid, updatedProfile);
+            setProfiles(prev => prev.map(p => (p.id === updatedProfile.id ? updatedProfile : p)));
+        } catch (e) {
+            const message = e instanceof Error ? e.message : "No se pudo actualizar el perfil.";
+            console.error("Error updating profile:", e);
+            setError(message);
+        }
     };
 
     const handleDeleteProfile = async (id: string) => {
         if (!user) return;
-        await firestoreService.deleteProfile(user.uid, id);
-        setProfiles(prev => prev.filter(p => p.id !== id));
+        try {
+            await firestoreService.deleteProfile(user.uid, id);
+            setProfiles(prev => prev.filter(p => p.id !== id));
+        } catch (e) {
+            const message = e instanceof Error ? e.message : "No se pudo eliminar el perfil.";
+            console.error("Error deleting profile:", e);
+            setError(message);
+        }
     };
 
     const handleAddRecipe = async (newRecipe: Omit<UserRecipe, 'id'>) => {
         if (!user) return;
-        const addedRecipe = await firestoreService.addUserRecipe(user.uid, newRecipe);
-        setUserRecipes(prev => [...prev, addedRecipe]);
+        try {
+            const addedRecipe = await firestoreService.addUserRecipe(user.uid, newRecipe);
+            setUserRecipes(prev => [...prev, addedRecipe]);
+        } catch (e) {
+            const message = e instanceof Error ? e.message : "No se pudo añadir la receta.";
+            console.error("Error adding recipe:", e);
+            setError(message);
+        }
     };
 
     const handleDeleteRecipe = async (id: string) => {
         if (!user) return;
-        await firestoreService.deleteUserRecipe(user.uid, id);
-        setUserRecipes(prev => prev.filter(r => r.id !== id));
+        try {
+            await firestoreService.deleteUserRecipe(user.uid, id);
+            setUserRecipes(prev => prev.filter(r => r.id !== id));
+        } catch (e) {
+            const message = e instanceof Error ? e.message : "No se pudo eliminar la receta.";
+            console.error("Error deleting recipe:", e);
+            setError(message);
+        }
     };
     
     const handleImportRecipes = async (importedRecipes: Omit<UserRecipe, 'id'>[]) => {
         if (!user) return;
-        const newRecipesWithIds = await firestoreService.importUserRecipes(user.uid, importedRecipes);
-        setUserRecipes(prev => [...prev, ...newRecipesWithIds]);
+        try {
+            const newRecipesWithIds = await firestoreService.importUserRecipes(user.uid, importedRecipes);
+            setUserRecipes(prev => [...prev, ...newRecipesWithIds]);
+        } catch (e) {
+            const message = e instanceof Error ? e.message : "No se pudieron importar las recetas.";
+            console.error("Error importing recipes:", e);
+            setError(message);
+        }
     };
 
     const handleGenerateMenu = async (startDate: string, duration: number, preferences: string, includeBreakfasts: boolean) => {
