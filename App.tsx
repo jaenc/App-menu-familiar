@@ -1,8 +1,10 @@
 
+
+
+
 import React, { useState, useEffect } from 'react';
-// Fix: Separated value and type imports for Firebase auth to resolve module resolution errors.
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import type { User } from 'firebase/auth';
+// Fix: Use modular imports for Firebase auth to address module resolution errors.
+import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from './services/firebase';
 import * as firestoreService from './services/firestoreService';
 import type { MenuPlan, Profile, UserRecipe } from './types';
@@ -27,6 +29,7 @@ const App: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('generator');
     
     // Auth state
+    // Fix: Use the imported User type directly.
     const [user, setUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
     const [loginLoading, setLoginLoading] = useState(false);
@@ -50,6 +53,7 @@ const App: React.FC = () => {
             return;
         };
 
+        // Fix: Call onAuthStateChanged directly as it's a modular import.
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             if (currentUser) {
@@ -82,11 +86,13 @@ const App: React.FC = () => {
         setError(null);
     }, [activeTab]);
 
+    const clearError = () => setError(null);
 
     const handleLogin = async () => {
         if (!auth || !googleProvider) return;
         setLoginLoading(true);
         try {
+            // Fix: Call signInWithPopup directly as it's a modular import.
             await signInWithPopup(auth, googleProvider);
         } catch (error) {
             console.error("Authentication error:", error);
@@ -97,6 +103,7 @@ const App: React.FC = () => {
 
     const handleLogout = async () => {
         if (!auth) return;
+        // Fix: Call signOut directly as it's a modular import.
         await signOut(auth);
     };
 
@@ -104,6 +111,7 @@ const App: React.FC = () => {
     const handleAddProfile = async (newProfile: Omit<Profile, 'id'>) => {
         if (!user) return;
         try {
+            setError(null);
             const addedProfile = await firestoreService.addProfile(user.uid, newProfile);
             setProfiles(prev => [...prev, addedProfile]);
         } catch (e) {
@@ -116,6 +124,7 @@ const App: React.FC = () => {
     const handleUpdateProfile = async (updatedProfile: Profile) => {
         if (!user) return;
         try {
+            setError(null);
             await firestoreService.updateProfile(user.uid, updatedProfile);
             setProfiles(prev => prev.map(p => (p.id === updatedProfile.id ? updatedProfile : p)));
         } catch (e) {
@@ -128,6 +137,7 @@ const App: React.FC = () => {
     const handleDeleteProfile = async (id: string) => {
         if (!user) return;
         try {
+            setError(null);
             await firestoreService.deleteProfile(user.uid, id);
             setProfiles(prev => prev.filter(p => p.id !== id));
         } catch (e) {
@@ -140,6 +150,7 @@ const App: React.FC = () => {
     const handleAddRecipe = async (newRecipe: Omit<UserRecipe, 'id'>) => {
         if (!user) return;
         try {
+            setError(null);
             const addedRecipe = await firestoreService.addUserRecipe(user.uid, newRecipe);
             setUserRecipes(prev => [...prev, addedRecipe]);
         } catch (e) {
@@ -152,6 +163,7 @@ const App: React.FC = () => {
     const handleDeleteRecipe = async (id: string) => {
         if (!user) return;
         try {
+            setError(null);
             await firestoreService.deleteUserRecipe(user.uid, id);
             setUserRecipes(prev => prev.filter(r => r.id !== id));
         } catch (e) {
@@ -164,6 +176,7 @@ const App: React.FC = () => {
     const handleImportRecipes = async (importedRecipes: Omit<UserRecipe, 'id'>[]) => {
         if (!user) return;
         try {
+            setError(null);
             const newRecipesWithIds = await firestoreService.importUserRecipes(user.uid, importedRecipes);
             setUserRecipes(prev => [...prev, ...newRecipesWithIds]);
         } catch (e) {
@@ -217,6 +230,8 @@ const App: React.FC = () => {
                         onAddProfile={handleAddProfile}
                         onUpdateProfile={handleUpdateProfile}
                         onDeleteProfile={handleDeleteProfile}
+                        error={error}
+                        clearError={clearError}
                     />
                 );
             case 'recipes':
@@ -226,6 +241,8 @@ const App: React.FC = () => {
                         onAddRecipe={handleAddRecipe}
                         onDeleteRecipe={handleDeleteRecipe}
                         onImportRecipes={handleImportRecipes}
+                        error={error}
+                        clearError={clearError}
                     />
                 );
             default:

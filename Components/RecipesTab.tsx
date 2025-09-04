@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import type { UserRecipe } from '../types';
 import TrashIcon from './icons/TrashIcon';
@@ -8,21 +9,23 @@ interface RecipesTabProps {
   onAddRecipe: (newRecipe: Omit<UserRecipe, 'id'>) => void;
   onDeleteRecipe: (id: string) => void;
   onImportRecipes: (importedRecipes: Omit<UserRecipe, 'id'>[]) => void;
+  error: string | null; // For errors from parent (e.g., Firestore)
+  clearError: () => void;
 }
 
-const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteRecipe, onImportRecipes }) => {
+const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteRecipe, onImportRecipes, error: parentError, clearError }) => {
   const [recipeName, setRecipeName] = useState('');
   const [ingredients, setIngredients] = useState('');
   const [fileName, setFileName] = useState('');
-  const [error, setError] = useState('');
+  const [formError, setFormError] = useState(''); // For local form validation
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!recipeName.trim() || !ingredients.trim()) {
-        setError('Ambos campos son obligatorios.');
+        setFormError('Ambos campos son obligatorios.');
         return;
     }
-    setError('');
+    setFormError('');
     onAddRecipe({ name: recipeName, ingredients });
     setRecipeName('');
     setIngredients('');
@@ -33,7 +36,7 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
     if (!file) return;
 
     setFileName(file.name);
-    setError('');
+    setFormError('');
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -44,11 +47,11 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
         e.target.value = ''; // Reset file input
         setFileName('');
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error al procesar el archivo.');
+        setFormError(err instanceof Error ? err.message : 'Error al procesar el archivo.');
       }
     };
     reader.onerror = () => {
-        setError('No se pudo leer el archivo.');
+        setFormError('No se pudo leer el archivo.');
     }
     reader.readAsText(file);
   };
@@ -83,6 +86,20 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 w-full max-w-4xl space-y-8">
+      
+      {parentError && (
+        <div className="p-3 mb-4 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm flex justify-between items-center" role="alert">
+          <span>
+            <strong>Error:</strong> {parentError}
+          </span>
+          <button onClick={clearError} className="p-1 rounded-full hover:bg-red-100" aria-label="Cerrar notificación">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       <div>
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Recetas Familiares</h2>
         <form onSubmit={handleAddSubmit} className="p-4 border rounded-lg bg-gray-50 space-y-4">
@@ -110,7 +127,7 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
             />
           </div>
           <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Añadir Receta</button>
-           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+           {formError && <p className="text-red-500 text-sm mt-2">{formError}</p>}
         </form>
       </div>
 
@@ -124,7 +141,7 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
           <span className="ml-3 text-gray-600">{fileName || 'No se ha seleccionado ningún archivo'}</span>
         </div>
         <p className="text-xs text-gray-500 mt-2">El CSV debe tener dos columnas: "nombre" e "ingredientes".</p>
-        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+        {formError && <p className="text-red-500 text-sm mt-2">{formError}</p>}
       </div>
 
       <div>
