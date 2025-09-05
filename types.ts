@@ -41,3 +41,10 @@ export interface ShoppingListItem {
   category: string;
   checked?: boolean;
 }
+
+export interface SavedMenu {
+  id: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  menuPlan: MenuPlan;
+}

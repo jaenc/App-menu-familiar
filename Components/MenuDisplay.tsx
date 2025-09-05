@@ -9,9 +9,13 @@ interface MenuDisplayProps {
   error: string | null;
   onSelectMeal: (mealName: string) => void;
   onGenerateShoppingList: () => void;
+  onSaveMenu: (menuPlan: MenuPlan, startDate: string, endDate: string) => Promise<void>;
 }
 
-const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuPlan, isLoading, error, onSelectMeal, onGenerateShoppingList }) => {
+const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuPlan, isLoading, error, onSelectMeal, onGenerateShoppingList, onSaveMenu }) => {
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [justSaved, setJustSaved] = React.useState(false);
+
   const sortedDays = menuPlan ? Object.keys(menuPlan).sort() : [];
   
   const handlePrint = () => {
@@ -114,6 +118,21 @@ const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuPlan, isLoading, error, o
         alert("Por favor, permite las ventanas emergentes para imprimir el menú.");
     }
   };
+  
+  const handleSaveMenu = async () => {
+    if (!menuPlan || sortedDays.length === 0) return;
+    setIsSaving(true);
+    try {
+      await onSaveMenu(menuPlan, sortedDays[0], sortedDays[sortedDays.length - 1]);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 3000); // Reset after 3 seconds
+    } catch (err) {
+      // The parent component will set a global error.
+      console.error("Failed to save menu:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const renderContent = () => {
     if (isLoading) {
@@ -150,6 +169,17 @@ const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuPlan, isLoading, error, o
         <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-gray-800">Tu Menú Personalizado</h2>
             <div className="flex gap-2">
+                 <button
+                    onClick={handleSaveMenu}
+                    disabled={isSaving || justSaved}
+                    className={`w-32 text-center px-4 py-2 text-sm font-medium border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${
+                        justSaved
+                        ? 'bg-green-100 text-green-700 cursor-default focus:ring-green-500'
+                        : 'text-blue-600 bg-blue-100 hover:bg-blue-200 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed'
+                    }`}
+                >
+                    {isSaving ? <SpinnerIcon className="w-5 h-5 mx-auto" /> : (justSaved ? 'Guardado ✓' : 'Guardar Menú')}
+                </button>
                 <button 
                   onClick={onGenerateShoppingList}
                   className="px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-100 border border-transparent rounded-md hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -206,4 +236,4 @@ const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuPlan, isLoading, error, o
   );
 };
 
-export default MenuDisplay;
+export default MenuDisplay

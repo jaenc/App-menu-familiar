@@ -1,8 +1,12 @@
+/// <reference types="vite/client" />
 
 // Fix: Use modular imports for Firebase to address module resolution errors.
-import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { initializeApp } from 'firebase/app';
+import type { FirebaseApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import type { Auth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import type { Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,

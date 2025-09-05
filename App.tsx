@@ -1,13 +1,12 @@
-
-
-
+/// <reference types="vite/client" />
 
 import React, { useState, useEffect } from 'react';
 // Fix: Use modular imports for Firebase auth to address module resolution errors.
-import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from './services/firebase';
 import * as firestoreService from './services/firestoreService';
-import type { MenuPlan, Profile, UserRecipe } from './types';
+import type { MenuPlan, Profile, UserRecipe, SavedMenu } from './types';
 import { generateMenuPlan } from './services/geminiService';
 
 // Components
@@ -18,6 +17,7 @@ import RecipeModal from './Components/RecipeModal';
 import ShoppingListModal from './Components/ShoppingListModal';
 import ProfilesTab from './Components/ProfilesTab';
 import RecipesTab from './Components/RecipesTab';
+import SavedMenusTab from './Components/SavedMenusTab';
 import SpinnerIcon from './Components/icons/SpinnerIcon';
 import ConfigErrorScreen from './Components/ConfigErrorScreen';
 
@@ -25,7 +25,7 @@ import ConfigErrorScreen from './Components/ConfigErrorScreen';
 const isGeminiConfigured = !!import.meta.env.VITE_API_KEY;
 
 const App: React.FC = () => {
-    type Tab = 'generator' | 'profiles' | 'recipes';
+    type Tab = 'generator' | 'profiles' | 'savedMenus' | 'recipes';
     const [activeTab, setActiveTab] = useState<Tab>('generator');
     
     // Auth state
@@ -37,6 +37,7 @@ const App: React.FC = () => {
     // App state
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [userRecipes, setUserRecipes] = useState<UserRecipe[]>([]);
+    const [savedMenus, setSavedMenus] = useState<SavedMenu[]>([]);
     const [dataLoading, setDataLoading] = useState(true);
 
     const [menuPlan, setMenuPlan] = useState<MenuPlan | null>(null);
@@ -59,12 +60,14 @@ const App: React.FC = () => {
             if (currentUser) {
                 setDataLoading(true);
                 try {
-                    const [fetchedProfiles, fetchedRecipes] = await Promise.all([
+                    const [fetchedProfiles, fetchedRecipes, fetchedMenus] = await Promise.all([
                         firestoreService.getProfiles(currentUser.uid),
-                        firestoreService.getUserRecipes(currentUser.uid)
+                        firestoreService.getUserRecipes(currentUser.uid),
+                        firestoreService.getSavedMenus(currentUser.uid)
                     ]);
                     setProfiles(fetchedProfiles);
                     setUserRecipes(fetchedRecipes);
+                    setSavedMenus(fetchedMenus);
                 } catch (e) {
                     console.error("Error fetching user data:", e);
                     setError("No se pudieron cargar tus datos.");
@@ -74,6 +77,7 @@ const App: React.FC = () => {
             } else {
                 setProfiles([]);
                 setUserRecipes([]);
+                setSavedMenus([]);
                 setDataLoading(false);
             }
             setAuthLoading(false);
@@ -201,6 +205,33 @@ const App: React.FC = () => {
         }
     };
 
+    const handleSaveMenu = async (menuPlan: MenuPlan, startDate: string, endDate: string) => {
+      if (!user) return;
+      try {
+        setError(null);
+        const savedMenu = await firestoreService.addSavedMenu(user.uid, { startDate, endDate, menuPlan });
+        setSavedMenus(prev => [savedMenu, ...prev]); // Add to the top of the list
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "No se pudo guardar el menú.";
+        console.error("Error saving menu:", e);
+        setError(message);
+        throw e; // Re-throw to let the child component know about the failure
+      }
+    };
+
+    const handleDeleteSavedMenu = async (id: string) => {
+      if (!user) return;
+      try {
+        setError(null);
+        await firestoreService.deleteSavedMenu(user.uid, id);
+        setSavedMenus(prev => prev.filter(m => m.id !== id));
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "No se pudo eliminar el menú.";
+        console.error("Error deleting saved menu:", e);
+        setError(message);
+      }
+    };
+
     const renderContent = () => {
         if (dataLoading) {
             return (
@@ -220,6 +251,7 @@ const App: React.FC = () => {
                             error={error}
                             onSelectMeal={(mealName) => setSelectedMeal(mealName)}
                             onGenerateShoppingList={() => setShoppingListOpen(true)}
+                            onSaveMenu={handleSaveMenu}
                         />
                     </div>
                 );
@@ -230,6 +262,15 @@ const App: React.FC = () => {
                         onAddProfile={handleAddProfile}
                         onUpdateProfile={handleUpdateProfile}
                         onDeleteProfile={handleDeleteProfile}
+                        error={error}
+                        clearError={clearError}
+                    />
+                );
+            case 'savedMenus':
+                return (
+                    <SavedMenusTab
+                        savedMenus={savedMenus}
+                        onDeleteMenu={handleDeleteSavedMenu}
                         error={error}
                         clearError={clearError}
                     />
@@ -317,6 +358,7 @@ const App: React.FC = () => {
                     <div className="flex space-x-2">
                         <TabButton tabName="generator" label="Generador Menú" />
                         <TabButton tabName="profiles" label="Perfiles" />
+                        <TabButton tabName="savedMenus" label="Menús Guardados" />
                         <TabButton tabName="recipes" label="Recetas" />
                     </div>
                 </nav>

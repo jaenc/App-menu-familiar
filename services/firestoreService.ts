@@ -1,6 +1,6 @@
 import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Profile, UserRecipe } from '../types';
+import type { Profile, UserRecipe, SavedMenu, MenuPlan } from '../types';
 
 // Helper to ensure DB is initialized
 const checkDb = () => {
@@ -100,5 +100,38 @@ export const deleteUserRecipe = async (userId: string, recipeId: string): Promis
     } catch (error) {
         console.error("Error deleting recipe in Firestore: ", error);
         throw new Error("No se pudo eliminar la receta de la base de datos.");
+    }
+};
+
+// Saved Menus
+export const getSavedMenus = async (userId: string): Promise<SavedMenu[]> => {
+    checkDb();
+    const menusCol = collection(db, 'users', userId, 'savedMenus');
+    const menuSnapshot = await getDocs(menusCol);
+    // Sort by start date, newest first
+    const menus = menuSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SavedMenu));
+    return menus.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+};
+
+export const addSavedMenu = async (userId: string, menu: Omit<SavedMenu, 'id'>): Promise<SavedMenu> => {
+    checkDb();
+    try {
+        const menusCol = collection(db, 'users', userId, 'savedMenus');
+        const docRef = await addDoc(menusCol, menu);
+        return { id: docRef.id, ...menu };
+    } catch (error) {
+        console.error("Error adding saved menu in Firestore: ", error);
+        throw new Error("No se pudo guardar el menú en la base de datos.");
+    }
+};
+
+export const deleteSavedMenu = async (userId: string, menuId: string): Promise<void> => {
+    checkDb();
+    try {
+        const menuDoc = doc(db, 'users', userId, 'savedMenus', menuId);
+        await deleteDoc(menuDoc);
+    } catch (error) {
+        console.error("Error deleting saved menu in Firestore: ", error);
+        throw new Error("No se pudo eliminar el menú guardado de la base de datos.");
     }
 };
