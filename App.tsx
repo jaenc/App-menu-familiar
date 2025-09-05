@@ -1,10 +1,7 @@
+// FIX: Added a triple-slash directive to include Vite client types, resolving errors with 'import.meta.env' and module resolution for Firebase.
 /// <reference types="vite/client" />
 
 import React, { useState, useEffect } from 'react';
-// FIX: The Firebase auth imports are correct for the modular SDK (v9+).
-// The module resolution error is likely a symptom of an overall TypeScript
-// configuration issue. Adding the Vite client types directive at the top of the file
-// should help resolve module resolution for all imports, including Firebase.
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from './services/firebase';
 import * as firestoreService from './services/firestoreService';
@@ -25,7 +22,6 @@ import ConfigErrorScreen from './Components/ConfigErrorScreen';
 import SwapMealModal from './Components/SwapMealModal';
 
 // Check for the API_KEY from .env
-// FIX: Moved the Vite client types directive to the top of the file to provide type definitions for import.meta.env.
 const isGeminiConfigured = !!import.meta.env.VITE_API_KEY;
 
 const App: React.FC = () => {
@@ -48,6 +44,7 @@ const App: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     const [selectedMeal, setSelectedMeal] = useState<string | null>(null);
+    const [selectedUserRecipeName, setSelectedUserRecipeName] = useState<string | null>(null);
     const [isShoppingListOpen, setShoppingListOpen] = useState(false);
     const [swappingMealInfo, setSwappingMealInfo] = useState<SwappingMealInfo | null>(null);
     
@@ -297,6 +294,7 @@ const App: React.FC = () => {
                         onAddRecipe={handleAddRecipe}
                         onDeleteRecipe={handleDeleteRecipe}
                         onImportRecipes={handleImportRecipes}
+                        onSelectRecipe={(name) => setSelectedUserRecipeName(name)}
                         error={error}
                         clearError={clearError}
                     />
@@ -383,11 +381,14 @@ const App: React.FC = () => {
                 </div>
             </main>
 
-            {selectedMeal && (
+            {(selectedMeal || selectedUserRecipeName) && (
                 <RecipeModal 
-                    mealName={selectedMeal}
+                    mealName={selectedMeal || selectedUserRecipeName}
                     profiles={profiles}
-                    onClose={() => setSelectedMeal(null)}
+                    onClose={() => {
+                        setSelectedMeal(null);
+                        setSelectedUserRecipeName(null);
+                    }}
                 />
             )}
 

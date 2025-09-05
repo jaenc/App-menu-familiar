@@ -7,6 +7,7 @@ interface RecipesTabProps {
   onAddRecipe: (newRecipe: Omit<UserRecipe, 'id'>) => void;
   onDeleteRecipe: (id: string) => void;
   onImportRecipes: (importedRecipes: Omit<UserRecipe, 'id'>[]) => void;
+  onSelectRecipe: (name: string) => void;
   error: string | null; // For errors from parent (e.g., Firestore)
   clearError: () => void;
 }
@@ -15,12 +16,15 @@ const recipeCategories: RecipeCategory[] = [
   'Arroces', 'Carnes', 'Pescados', 'Pastas', 'Legumbres', 'Verduras y Ensaladas', 'Cremas y Sopas', 'Otros'
 ];
 
-const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteRecipe, onImportRecipes, error: parentError, clearError }) => {
+const allRecipeCategoriesForFilter: string[] = ['All', ...recipeCategories, 'Sin Clasificar'];
+
+const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteRecipe, onImportRecipes, onSelectRecipe, error: parentError, clearError }) => {
   const [recipeName, setRecipeName] = useState('');
   const [ingredients, setIngredients] = useState('');
   const [category, setCategory] = useState<RecipeCategory>('Otros');
   const [fileName, setFileName] = useState('');
   const [formError, setFormError] = useState(''); // For local form validation
+  const [filterCategory, setFilterCategory] = useState<string>('All');
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +92,12 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
       return recipe;
     }).filter((r): r is Omit<UserRecipe, 'id'> => r !== null);
   };
+
+  const recipesToDisplay = recipes
+    .filter(recipe =>
+        filterCategory === 'All' || (recipe.category || 'Sin Clasificar') === filterCategory
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 w-full max-w-4xl space-y-8">
@@ -163,24 +173,42 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
       </div>
 
       <div>
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Recetas Guardadas</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-gray-800">Recetas Guardadas</h3>
+          <div className="flex items-center gap-2">
+            <label htmlFor="filter-category" className="text-sm font-medium text-gray-700">Filtrar:</label>
+            <select
+              id="filter-category"
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="px-3 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white text-sm"
+            >
+              {allRecipeCategoriesForFilter.map(cat => (
+                <option key={cat} value={cat}>{cat === 'All' ? 'Todas' : cat}</option>
+              ))}
+            </select>
+          </div>
+        </div>
         {recipes.length > 0 ? (
           <div className="space-y-3">
-            {recipes.map((recipe) => (
+            {recipesToDisplay.map((recipe) => (
               <div key={recipe.id} className="p-3 border rounded-md flex justify-between items-center bg-gray-50">
-                <div>
-                  <p className="font-semibold text-gray-800">{recipe.name} <span className="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">{recipe.category}</span></p>
+                <button onClick={() => onSelectRecipe(recipe.name)} className="text-left flex-grow hover:bg-gray-100 rounded-md p-2 -m-2">
+                  <p className="font-semibold text-gray-800">{recipe.name} <span className="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">{recipe.category || 'Sin Clasificar'}</span></p>
                   <p className="text-sm text-gray-600">{recipe.ingredients}</p>
-                </div>
+                </button>
                 <button 
                     onClick={() => onDeleteRecipe(recipe.id)}
-                    className="text-gray-500 hover:text-red-600 transition-colors p-1"
+                    className="text-gray-500 hover:text-red-600 transition-colors p-1 ml-4 flex-shrink-0"
                     aria-label={`Eliminar receta ${recipe.name}`}
                 >
                     <TrashIcon className="w-5 h-5" />
                 </button>
               </div>
             ))}
+             {recipesToDisplay.length === 0 && (
+                <p className="text-center text-gray-500 py-6">No hay recetas en esta categoría.</p>
+            )}
           </div>
         ) : (
           <p className="text-center text-gray-500 py-6">No hay recetas guardadas.</p>
@@ -188,6 +216,3 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
       </div>
     </div>
   );
-};
-
-export default RecipesTab;

@@ -30,7 +30,7 @@ const SwapMealModal: React.FC<SwapMealModalProps> = ({ isOpen, onClose, swapInfo
   
   const filteredRecipes = useMemo(() => {
     if (!selectedCategory) return [];
-    return availableRecipes.filter(r => r.category === selectedCategory);
+    return availableRecipes.filter(r => (r.category || 'Sin Clasificar') === selectedCategory);
   }, [selectedCategory, availableRecipes]);
 
   const handleRecipeSelection = (recipeId: string) => {
@@ -44,8 +44,9 @@ const SwapMealModal: React.FC<SwapMealModalProps> = ({ isOpen, onClose, swapInfo
     const otherMeal = dayPlan[otherMealType];
 
     const heavyCategories: RecipeCategory[] = ['Carnes', 'Pescados', 'Legumbres', 'Pastas', 'Arroces'];
+    const newRecipeCategory = newRecipe.category || 'Sin Clasificar';
 
-    if (otherMeal && heavyCategories.includes(newRecipe.category as RecipeCategory) && newRecipe.category === otherMeal.category) {
+    if (otherMeal && heavyCategories.includes(newRecipeCategory as RecipeCategory) && newRecipeCategory === otherMeal.category) {
       setBalanceWarning(`💡 Sugerencia: Ya tienes un plato de ${otherMeal.category.toLowerCase()} para la ${otherMealType === 'lunch' ? 'comida' : 'cena'}. Para un menú más variado, podrías considerar otra opción.`);
     } else {
       setBalanceWarning('');
@@ -56,7 +57,9 @@ const SwapMealModal: React.FC<SwapMealModalProps> = ({ isOpen, onClose, swapInfo
     e.preventDefault();
     const recipeToSwap = availableRecipes.find(r => r.id === selectedRecipeId);
     if (recipeToSwap) {
-      onConfirmSwap({ name: recipeToSwap.name, category: recipeToSwap.category as RecipeCategory });
+      // FIX: Map 'Sin Clasificar' to 'Otros' to satisfy the MealDetail type.
+      const mealCategory = recipeToSwap.category === 'Sin Clasificar' ? 'Otros' : recipeToSwap.category;
+      onConfirmSwap({ name: recipeToSwap.name, category: mealCategory });
     }
   };
 
