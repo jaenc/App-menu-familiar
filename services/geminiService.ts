@@ -1,10 +1,10 @@
-// Fix: Add Vite client types to provide type definitions for import.meta.env.
 /// <reference types="vite/client" />
 
 import { GoogleGenAI, Type } from "@google/genai";
 import type { MenuPlan, Recipe, ShoppingListItem, Profile, UserRecipe } from '../types';
 
 // Initialize with the API_KEY from .env
+// FIX: Moved the Vite client types directive to the top of the file to provide type definitions for import.meta.env.
 const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
 
 const recipeGenerationSchema = {
