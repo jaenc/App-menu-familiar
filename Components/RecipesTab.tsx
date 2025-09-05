@@ -71,24 +71,40 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
     const headerLine = lines.shift()?.toLowerCase();
     if (!headerLine) throw new Error('El CSV está vacío o no tiene cabecera.');
     
-    const headers = headerLine.split(',').map(h => h.trim().replace(/"/g, ''));
+    // Normalize headers: remove quotes, BOM, and trim spaces
+    const headers = headerLine.split(',').map(h => h.trim().replace(/"/g, '').replace(/^\uFEFF/, ''));
     const nameIndex = headers.indexOf('nombre');
     const ingredientsIndex = headers.indexOf('ingredientes');
+    const categoryIndex = headers.indexOf('categoría'); // Optional category, with accent
     
     if (nameIndex === -1 || ingredientsIndex === -1) {
-        throw new Error('El CSV debe tener las columnas "nombre" e "ingredientes".');
+        throw new Error('El CSV debe tener como mínimo las columnas "nombre" e "ingredientes".');
     }
 
     return lines.map(line => {
-      const values = line.split(','); 
-      const name = values[nameIndex]?.trim().replace(/"/g, '');
-      const ingredients = values[ingredientsIndex]?.trim().replace(/"/g, '');
+      // Basic CSV parsing, may need to be more robust for complex cases
+      const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
 
+      const name = values[nameIndex];
+      const ingredients = values[ingredientsIndex];
+      const categoryValue = categoryIndex !== -1 ? values[categoryIndex] : undefined;
+      
       if (!name || !ingredients) {
         return null;
       }
-      const recipe: Omit<UserRecipe, 'id'> = { name, ingredients, category: 'Sin Clasificar' };
+      
+      let finalCategory: UserRecipe['category'] = 'Sin Clasificar';
+      if (categoryValue) {
+        // Find a category that matches case-insensitively
+        const matchedCategory = recipeCategories.find(cat => cat.toLowerCase() === categoryValue.trim().toLowerCase());
+        if (matchedCategory) {
+          finalCategory = matchedCategory;
+        }
+      }
+      
+      const recipe: Omit<UserRecipe, 'id'> = { name, ingredients, category: finalCategory };
       return recipe;
+
     }).filter((r): r is Omit<UserRecipe, 'id'> => r !== null);
   };
 
@@ -167,7 +183,7 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
           </label>
           <span className="ml-3 text-gray-600">{fileName || 'No se ha seleccionado ningún archivo'}</span>
         </div>
-        <p className="text-xs text-gray-500 mt-2">El CSV debe tener las columnas "nombre" e "ingredientes". Las recetas importadas se guardarán como "Sin Clasificar".</p>
+        <p className="text-xs text-gray-500 mt-2">El CSV debe tener las columnas "nombre", "ingredientes" y opcionalmente "categoría". Las recetas sin una categoría válida se guardarán como "Sin Clasificar".</p>
         {formError && <p className="text-red-500 text-sm mt-2">{formError}</p>}
       </div>
 

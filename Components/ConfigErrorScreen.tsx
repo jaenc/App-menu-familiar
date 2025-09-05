@@ -18,19 +18,20 @@ const ConfigErrorScreen: React.FC = () => {
         </ol>
         <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
           <h3 className="font-semibold text-gray-800 mb-2">Contenido para <code>.env.local</code>:</h3>
+          {/* FIX: Updated variable names to remove VITE_ prefix, aligning with switch to process.env */}
           <pre className="text-sm text-gray-800 bg-gray-200 p-3 rounded overflow-x-auto">
             <code>
 {`# Obtén esta clave desde el panel de control de la API de Gemini (Google AI Studio)
-VITE_API_KEY="AIza..."
+API_KEY="AIza..."
 
 # Obtén estas claves desde la configuración de tu proyecto en Firebase
 # (Configuración del proyecto > General > Tus apps > App web > Configuración y SDK)
-VITE_FIREBASE_API_KEY="AIza..."
-VITE_FIREBASE_AUTH_DOMAIN="tu-proyecto.firebaseapp.com"
-VITE_FIREBASE_PROJECT_ID="tu-proyecto"
-VITE_FIREBASE_STORAGE_BUCKET="tu-proyecto.appspot.com"
-VITE_FIREBASE_MESSAGING_SENDER_ID="1234567890"
-VITE_FIREBASE_APP_ID="1:1234567890:web:abcdef123456"`}
+FIREBASE_API_KEY="AIza..."
+FIREBASE_AUTH_DOMAIN="tu-proyecto.firebaseapp.com"
+FIREBASE_PROJECT_ID="tu-proyecto"
+FIREBASE_STORAGE_BUCKET="tu-proyecto.appspot.com"
+FIREBASE_MESSAGING_SENDER_ID="1234567890"
+FIREBASE_APP_ID="1:1234567890:web:abcdef123456"`}
             </code>
           </pre>
         </div>

@@ -1,8 +1,16 @@
-/// <reference types="vite/client" />
+// Fix: Manually define types for import.meta.env to resolve TypeScript errors in environments
+// where `vite/client` types are not automatically recognized.
+interface ImportMetaEnv {
+    readonly VITE_API_KEY: string;
+}
+
+interface ImportMeta {
+    readonly env: ImportMetaEnv;
+}
 
 import React, { useState, useEffect } from 'react';
-// FIX: Changed to namespace import for firebase/auth to resolve module resolution errors.
-import * as fbAuth from 'firebase/auth';
+// FIX: Changed to named imports for Firebase v9+ modular SDK to resolve module resolution errors.
+import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from './services/firebase';
 import * as firestoreService from './services/firestoreService';
 import type { MenuPlan, Profile, UserRecipe, SavedMenu, SwappingMealInfo, MealDetail } from './types';
@@ -29,7 +37,7 @@ const App: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('generator');
     
     // Auth state
-    const [user, setUser] = useState<fbAuth.User | null>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
     const [loginLoading, setLoginLoading] = useState(false);
     
@@ -55,7 +63,7 @@ const App: React.FC = () => {
             return;
         };
 
-        const unsubscribe = fbAuth.onAuthStateChanged(auth, async (currentUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             if (currentUser) {
                 setDataLoading(true);
@@ -96,7 +104,7 @@ const App: React.FC = () => {
         if (!auth || !googleProvider) return;
         setLoginLoading(true);
         try {
-            await fbAuth.signInWithPopup(auth, googleProvider);
+            await signInWithPopup(auth, googleProvider);
         } catch (error) {
             console.error("Authentication error:", error);
         } finally {
@@ -106,7 +114,7 @@ const App: React.FC = () => {
 
     const handleLogout = async () => {
         if (!auth) return;
-        await fbAuth.signOut(auth);
+        await signOut(auth);
     };
 
     // CRUD handlers

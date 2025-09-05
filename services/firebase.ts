@@ -1,8 +1,22 @@
-/// <reference types="vite/client" />
+// Fix: Manually define types for import.meta.env to resolve TypeScript errors in environments
+// where `vite/client` types are not automatically recognized.
+interface ImportMetaEnv {
+    readonly VITE_FIREBASE_API_KEY: string;
+    readonly VITE_FIREBASE_AUTH_DOMAIN: string;
+    readonly VITE_FIREBASE_PROJECT_ID: string;
+    readonly VITE_FIREBASE_STORAGE_BUCKET: string;
+    readonly VITE_FIREBASE_MESSAGING_SENDER_ID: string;
+    readonly VITE_FIREBASE_APP_ID: string;
+}
 
+interface ImportMeta {
+    readonly env: ImportMetaEnv;
+}
+
+
+// FIX: Switched to named imports for Firebase v9+ modular SDK to resolve module resolution errors.
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-// FIX: Changed to namespace import for firebase/auth to resolve module resolution errors.
-import * as fbAuth from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -17,15 +31,15 @@ const firebaseConfig = {
 export const isFirebaseConfigured = !!firebaseConfig.apiKey;
 
 let app: FirebaseApp | null = null;
-let auth: fbAuth.Auth | null = null;
+let auth: Auth | null = null;
 let db: Firestore | null = null;
-let googleProvider: fbAuth.GoogleAuthProvider | null = null;
+let googleProvider: GoogleAuthProvider | null = null;
 
 if (isFirebaseConfigured) {
     app = initializeApp(firebaseConfig);
-    auth = fbAuth.getAuth(app);
+    auth = getAuth(app);
     db = getFirestore(app);
-    googleProvider = new fbAuth.GoogleAuthProvider();
+    googleProvider = new GoogleAuthProvider();
 }
 
 export { auth, db, googleProvider };

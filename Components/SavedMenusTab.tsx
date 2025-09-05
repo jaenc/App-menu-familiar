@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { SavedMenu } from '../types';
 import { getFormattedDate } from '../utils/dateUtils';
 import TrashIcon from './icons/TrashIcon';
+import PrintIcon from './icons/PrintIcon';
 
 interface SavedMenusTabProps {
   savedMenus: SavedMenu[];
@@ -14,22 +15,94 @@ const SavedMenuItem: React.FC<{ menu: SavedMenu; onDelete: (id: string) => void 
   const [isOpen, setIsOpen] = useState(false);
   const sortedDays = Object.keys(menu.menuPlan).sort();
 
+  const handlePrint = () => {
+    if (!menu.menuPlan || sortedDays.length === 0) return;
+    
+    const printContent = `
+      <html>
+        <head>
+          <title>Menú Semanal (${getFormattedDate(menu.startDate)} - ${getFormattedDate(menu.endDate)})</title>
+          <style>
+            @page { size: landscape; margin: 1cm; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #1f2937; }
+            h1 { text-align: center; font-size: 1.5rem; font-weight: bold; margin-bottom: 1.5rem; color: #111827; }
+            .menu-grid { display: grid; grid-template-columns: repeat(${sortedDays.length > 7 ? '7' : sortedDays.length}, 1fr); gap: 0.5rem; }
+            .day-card { border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem; display: flex; flex-direction: column; break-inside: avoid; }
+            .day-card h3 { font-weight: bold; text-align: center; font-size: 0.9rem; text-transform: capitalize; margin-bottom: 0.5rem; color: #374151; }
+            .meal { border-top: 1px solid #f3f4f6; padding-top: 0.5rem; margin-top: 0.5rem; }
+            .meal-title { font-size: 0.7rem; font-weight: 600; color: #6b7280; text-transform: uppercase; }
+            .meal-name { font-size: 0.85rem; color: #111827; }
+          </style>
+        </head>
+        <body>
+          <h1>Menú Semanal: ${getFormattedDate(menu.startDate)} al ${getFormattedDate(menu.endDate)}</h1>
+          <div class="menu-grid">
+            ${sortedDays.map(day => `
+              <div class="day-card">
+                <h3>${getFormattedDate(day)}</h3>
+                <div class="meals-container">
+                  ${menu.menuPlan[day].breakfast ? `
+                    <div class="meal">
+                      <p class="meal-title">DESAYUNO</p>
+                      <p class="meal-name">${menu.menuPlan[day].breakfast!.name}</p>
+                    </div>
+                  ` : ''}
+                  <div class="meal">
+                    <p class="meal-title">COMIDA</p>
+                    <p class="meal-name">${menu.menuPlan[day].lunch.name}</p>
+                  </div>
+                  <div class="meal">
+                    <p class="meal-title">CENA</p>
+                    <p class="meal-name">${menu.menuPlan[day].dinner.name}</p>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    } else {
+        alert("Por favor, permite las ventanas emergentes para imprimir el menú.");
+    }
+  };
+
+
   return (
     <div className="border rounded-lg bg-gray-50 overflow-hidden">
       <div 
-        className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-100"
-        onClick={() => setIsOpen(!isOpen)}
-        role="button"
-        aria-expanded={isOpen}
-        aria-controls={`menu-${menu.id}`}
+        className="p-4 flex justify-between items-center"
       >
-        <div>
+        <div 
+            className="flex-grow cursor-pointer"
+            onClick={() => setIsOpen(!isOpen)}
+            role="button"
+            aria-expanded={isOpen}
+            aria-controls={`menu-${menu.id}`}
+        >
           <h3 className="font-bold text-lg text-gray-900">Menú Semanal</h3>
           <p className="text-sm text-gray-600">
             Del {getFormattedDate(menu.startDate)} al {getFormattedDate(menu.endDate)}
           </p>
         </div>
         <div className="flex items-center space-x-4">
+           <button
+              onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrint();
+              }}
+              className="text-gray-500 hover:text-indigo-600 transition-colors"
+              aria-label={`Imprimir menú del ${menu.startDate}`}
+          >
+              <PrintIcon className="w-5 h-5" />
+          </button>
           <button
               onClick={(e) => {
                   e.stopPropagation();
@@ -40,9 +113,15 @@ const SavedMenuItem: React.FC<{ menu: SavedMenu; onDelete: (id: string) => void 
           >
               <TrashIcon className="w-5 h-5" />
           </button>
-           <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+          <button 
+             onClick={() => setIsOpen(!isOpen)}
+             className="text-gray-500"
+             aria-label="Expandir o contraer menú"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+           </button>
         </div>
       </div>
       {isOpen && (

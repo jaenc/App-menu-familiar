@@ -1,4 +1,12 @@
-/// <reference types="vite/client" />
+// Fix: Manually define types for import.meta.env to resolve TypeScript errors in environments
+// where `vite/client` types are not automatically recognized.
+interface ImportMetaEnv {
+    readonly VITE_API_KEY: string;
+}
+
+interface ImportMeta {
+    readonly env: ImportMetaEnv;
+}
 
 import { GoogleGenAI, Type } from "@google/genai";
 import type { MenuPlan, Recipe, ShoppingListItem, Profile, UserRecipe } from '../types';
