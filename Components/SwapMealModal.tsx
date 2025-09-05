@@ -15,7 +15,7 @@ const allCategories: RecipeCategory[] = [
 ];
 
 const SwapMealModal: React.FC<SwapMealModalProps> = ({ isOpen, onClose, swapInfo, dayPlan, availableRecipes, onConfirmSwap }) => {
-  const [selectedCategory, setSelectedCategory] = useState<RecipeCategory | ''>('');
+  const [selectedCategory, setSelectedCategory] = useState<RecipeCategory | 'Sin Clasificar' | ''>('');
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>('');
   const [balanceWarning, setBalanceWarning] = useState<string>('');
 
@@ -88,7 +88,7 @@ const SwapMealModal: React.FC<SwapMealModalProps> = ({ isOpen, onClose, swapInfo
                   id="category-select"
                   value={selectedCategory}
                   onChange={(e) => {
-                    setSelectedCategory(e.target.value as RecipeCategory);
+                    setSelectedCategory(e.target.value as RecipeCategory | 'Sin Clasificar' | '');
                     setSelectedRecipeId(''); // Reset recipe selection
                     setBalanceWarning('');
                   }}
