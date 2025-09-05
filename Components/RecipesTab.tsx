@@ -87,7 +87,6 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
       if (!name || !ingredients) {
         return null;
       }
-      // Fix: Explicitly type the returned object to match Omit<UserRecipe, 'id'>
       const recipe: Omit<UserRecipe, 'id'> = { name, ingredients, category: 'Sin Clasificar' };
       return recipe;
     }).filter((r): r is Omit<UserRecipe, 'id'> => r !== null);
@@ -216,3 +215,6 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
       </div>
     </div>
   );
+};
+
+export default RecipesTab;

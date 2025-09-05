@@ -1,8 +1,8 @@
-// FIX: Added a triple-slash directive to include Vite client types, resolving errors with 'import.meta.env' and module resolution for Firebase.
 /// <reference types="vite/client" />
 
 import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth';
+// FIX: Changed to namespace import for firebase/auth to resolve module resolution errors.
+import * as fbAuth from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from './services/firebase';
 import * as firestoreService from './services/firestoreService';
 import type { MenuPlan, Profile, UserRecipe, SavedMenu, SwappingMealInfo, MealDetail } from './types';
@@ -29,7 +29,7 @@ const App: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('generator');
     
     // Auth state
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<fbAuth.User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
     const [loginLoading, setLoginLoading] = useState(false);
     
@@ -55,7 +55,7 @@ const App: React.FC = () => {
             return;
         };
 
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        const unsubscribe = fbAuth.onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             if (currentUser) {
                 setDataLoading(true);
@@ -96,7 +96,7 @@ const App: React.FC = () => {
         if (!auth || !googleProvider) return;
         setLoginLoading(true);
         try {
-            await signInWithPopup(auth, googleProvider);
+            await fbAuth.signInWithPopup(auth, googleProvider);
         } catch (error) {
             console.error("Authentication error:", error);
         } finally {
@@ -106,7 +106,7 @@ const App: React.FC = () => {
 
     const handleLogout = async () => {
         if (!auth) return;
-        await signOut(auth);
+        await fbAuth.signOut(auth);
     };
 
     // CRUD handlers

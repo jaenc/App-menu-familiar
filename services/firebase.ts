@@ -1,8 +1,8 @@
-// FIX: Added a triple-slash directive to include Vite client types, resolving errors with 'import.meta.env' and module resolution for Firebase.
 /// <reference types="vite/client" />
 
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
+// FIX: Changed to namespace import for firebase/auth to resolve module resolution errors.
+import * as fbAuth from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -17,15 +17,15 @@ const firebaseConfig = {
 export const isFirebaseConfigured = !!firebaseConfig.apiKey;
 
 let app: FirebaseApp | null = null;
-let auth: Auth | null = null;
+let auth: fbAuth.Auth | null = null;
 let db: Firestore | null = null;
-let googleProvider: GoogleAuthProvider | null = null;
+let googleProvider: fbAuth.GoogleAuthProvider | null = null;
 
 if (isFirebaseConfigured) {
     app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
+    auth = fbAuth.getAuth(app);
     db = getFirestore(app);
-    googleProvider = new GoogleAuthProvider();
+    googleProvider = new fbAuth.GoogleAuthProvider();
 }
 
 export { auth, db, googleProvider };
