@@ -1,10 +1,11 @@
+// Fix: Add Vite client types to provide type definitions for import.meta.env.
+/// <reference types="vite/client" />
 
 import { GoogleGenAI, Type } from "@google/genai";
 import type { MenuPlan, Recipe, ShoppingListItem, Profile, UserRecipe } from '../types';
 
-// Fix: Use process.env.API_KEY for the Gemini API key as per guidelines. This also resolves errors with import.meta.env.
 // Initialize with the API_KEY from .env
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
 
 const recipeGenerationSchema = {
     type: Type.OBJECT,

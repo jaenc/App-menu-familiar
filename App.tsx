@@ -1,3 +1,6 @@
+// Fix: Add Vite client types to resolve issues with import.meta.env and potentially fix module resolution for Firebase.
+/// <reference types="vite/client" />
+
 import React, { useState, useEffect } from 'react';
 // Fix: Use modular imports for Firebase auth to address module resolution errors.
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
@@ -20,9 +23,8 @@ import SpinnerIcon from './Components/icons/SpinnerIcon';
 import ConfigErrorScreen from './Components/ConfigErrorScreen';
 import SwapMealModal from './Components/SwapMealModal';
 
-// Fix: Use process.env.API_KEY for Gemini configuration check to resolve errors with import.meta.env.
 // Check for the API_KEY from .env
-const isGeminiConfigured = !!process.env.API_KEY;
+const isGeminiConfigured = !!import.meta.env.VITE_API_KEY;
 
 const App: React.FC = () => {
     type Tab = 'generator' | 'profiles' | 'savedMenus' | 'recipes';
