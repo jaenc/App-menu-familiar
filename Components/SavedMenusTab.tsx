@@ -56,16 +56,19 @@ const SavedMenuItem: React.FC<{ menu: SavedMenu; onDelete: (id: string) => void 
                       {menu.menuPlan[day].breakfast && (
                         <div className="border-t pt-2">
                           <p className="text-xs font-semibold text-gray-500">DESAYUNO</p>
-                          <p className="text-sm text-gray-800">{menu.menuPlan[day].breakfast}</p>
+                          {/* Fix: Render the .name property of the meal object instead of the object itself. */}
+                          <p className="text-sm text-gray-800">{menu.menuPlan[day].breakfast!.name}</p>
                         </div>
                       )}
                       <div className="border-t pt-2">
                         <p className="text-xs font-semibold text-gray-500">COMIDA</p>
-                        <p className="text-sm text-gray-800">{menu.menuPlan[day].lunch}</p>
+                        {/* Fix: Render the .name property of the meal object instead of the object itself. */}
+                        <p className="text-sm text-gray-800">{menu.menuPlan[day].lunch.name}</p>
                       </div>
                        <div className="border-t pt-2">
                         <p className="text-xs font-semibold text-gray-500">CENA</p>
-                        <p className="text-sm text-gray-800">{menu.menuPlan[day].dinner}</p>
+                        {/* Fix: Render the .name property of the meal object instead of the object itself. */}
+                        <p className="text-sm text-gray-800">{menu.menuPlan[day].dinner.name}</p>
                       </div>
                     </div>
                   </div>

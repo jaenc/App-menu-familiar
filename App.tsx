@@ -1,12 +1,10 @@
-/// <reference types="vite/client" />
-
 import React, { useState, useEffect } from 'react';
 // Fix: Use modular imports for Firebase auth to address module resolution errors.
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from './services/firebase';
 import * as firestoreService from './services/firestoreService';
-import type { MenuPlan, Profile, UserRecipe, SavedMenu } from './types';
+import type { MenuPlan, Profile, UserRecipe, SavedMenu, SwappingMealInfo, MealDetail } from './types';
 import { generateMenuPlan } from './services/geminiService';
 
 // Components
@@ -20,16 +18,17 @@ import RecipesTab from './Components/RecipesTab';
 import SavedMenusTab from './Components/SavedMenusTab';
 import SpinnerIcon from './Components/icons/SpinnerIcon';
 import ConfigErrorScreen from './Components/ConfigErrorScreen';
+import SwapMealModal from './Components/SwapMealModal';
 
-// Check for the VITE_API_KEY from .env.local
-const isGeminiConfigured = !!import.meta.env.VITE_API_KEY;
+// Fix: Use process.env.API_KEY for Gemini configuration check to resolve errors with import.meta.env.
+// Check for the API_KEY from .env
+const isGeminiConfigured = !!process.env.API_KEY;
 
 const App: React.FC = () => {
     type Tab = 'generator' | 'profiles' | 'savedMenus' | 'recipes';
     const [activeTab, setActiveTab] = useState<Tab>('generator');
     
     // Auth state
-    // Fix: Use the imported User type directly.
     const [user, setUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
     const [loginLoading, setLoginLoading] = useState(false);
@@ -46,6 +45,7 @@ const App: React.FC = () => {
 
     const [selectedMeal, setSelectedMeal] = useState<string | null>(null);
     const [isShoppingListOpen, setShoppingListOpen] = useState(false);
+    const [swappingMealInfo, setSwappingMealInfo] = useState<SwappingMealInfo | null>(null);
     
     // Auth effect
     useEffect(() => {
@@ -54,7 +54,6 @@ const App: React.FC = () => {
             return;
         };
 
-        // Fix: Call onAuthStateChanged directly as it's a modular import.
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             if (currentUser) {
@@ -96,7 +95,6 @@ const App: React.FC = () => {
         if (!auth || !googleProvider) return;
         setLoginLoading(true);
         try {
-            // Fix: Call signInWithPopup directly as it's a modular import.
             await signInWithPopup(auth, googleProvider);
         } catch (error) {
             console.error("Authentication error:", error);
@@ -107,7 +105,6 @@ const App: React.FC = () => {
 
     const handleLogout = async () => {
         if (!auth) return;
-        // Fix: Call signOut directly as it's a modular import.
         await signOut(auth);
     };
 
@@ -156,7 +153,7 @@ const App: React.FC = () => {
         try {
             setError(null);
             const addedRecipe = await firestoreService.addUserRecipe(user.uid, newRecipe);
-            setUserRecipes(prev => [...prev, addedRecipe]);
+            setUserRecipes(prev => [...prev, addedRecipe].sort((a, b) => a.name.localeCompare(b.name)));
         } catch (e) {
             const message = e instanceof Error ? e.message : "No se pudo añadir la receta.";
             console.error("Error adding recipe:", e);
@@ -182,7 +179,7 @@ const App: React.FC = () => {
         try {
             setError(null);
             const newRecipesWithIds = await firestoreService.importUserRecipes(user.uid, importedRecipes);
-            setUserRecipes(prev => [...prev, ...newRecipesWithIds]);
+            setUserRecipes(prev => [...prev, ...newRecipesWithIds].sort((a, b) => a.name.localeCompare(b.name)));
         } catch (e) {
             const message = e instanceof Error ? e.message : "No se pudieron importar las recetas.";
             console.error("Error importing recipes:", e);
@@ -232,6 +229,19 @@ const App: React.FC = () => {
       }
     };
 
+    const handleConfirmSwap = (newMeal: MealDetail) => {
+        if (!swappingMealInfo || !menuPlan) return;
+
+        const { date, mealType } = swappingMealInfo;
+        
+        const updatedMenuPlan = { ...menuPlan };
+        updatedMenuPlan[date] = { ...updatedMenuPlan[date], [mealType]: newMeal };
+
+        setMenuPlan(updatedMenuPlan);
+        setSwappingMealInfo(null);
+    };
+
+
     const renderContent = () => {
         if (dataLoading) {
             return (
@@ -252,6 +262,7 @@ const App: React.FC = () => {
                             onSelectMeal={(mealName) => setSelectedMeal(mealName)}
                             onGenerateShoppingList={() => setShoppingListOpen(true)}
                             onSaveMenu={handleSaveMenu}
+                            onInitiateSwap={(info) => setSwappingMealInfo(info)}
                         />
                     </div>
                 );
@@ -382,6 +393,17 @@ const App: React.FC = () => {
                     onClose={() => setShoppingListOpen(false)}
                     menuPlan={menuPlan}
                     profiles={profiles}
+                />
+            )}
+
+            {swappingMealInfo && menuPlan && (
+                <SwapMealModal
+                    isOpen={!!swappingMealInfo}
+                    onClose={() => setSwappingMealInfo(null)}
+                    swapInfo={swappingMealInfo}
+                    dayPlan={menuPlan[swappingMealInfo.date]}
+                    availableRecipes={userRecipes}
+                    onConfirmSwap={handleConfirmSwap}
                 />
             )}
 

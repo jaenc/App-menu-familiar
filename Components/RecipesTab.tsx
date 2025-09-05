@@ -1,7 +1,5 @@
-
-
 import React, { useState } from 'react';
-import type { UserRecipe } from '../types';
+import type { UserRecipe, RecipeCategory } from '../types';
 import TrashIcon from './icons/TrashIcon';
 
 interface RecipesTabProps {
@@ -13,22 +11,28 @@ interface RecipesTabProps {
   clearError: () => void;
 }
 
+const recipeCategories: RecipeCategory[] = [
+  'Arroces', 'Carnes', 'Pescados', 'Pastas', 'Legumbres', 'Verduras y Ensaladas', 'Cremas y Sopas', 'Otros'
+];
+
 const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteRecipe, onImportRecipes, error: parentError, clearError }) => {
   const [recipeName, setRecipeName] = useState('');
   const [ingredients, setIngredients] = useState('');
+  const [category, setCategory] = useState<RecipeCategory>('Otros');
   const [fileName, setFileName] = useState('');
   const [formError, setFormError] = useState(''); // For local form validation
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!recipeName.trim() || !ingredients.trim()) {
-        setFormError('Ambos campos son obligatorios.');
+        setFormError('Todos los campos son obligatorios.');
         return;
     }
     setFormError('');
-    onAddRecipe({ name: recipeName, ingredients });
+    onAddRecipe({ name: recipeName, ingredients, category });
     setRecipeName('');
     setIngredients('');
+    setCategory('Otros');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +67,6 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
     const headerLine = lines.shift()?.toLowerCase();
     if (!headerLine) throw new Error('El CSV está vacío o no tiene cabecera.');
     
-    // Basic CSV parsing to find header indices
     const headers = headerLine.split(',').map(h => h.trim().replace(/"/g, ''));
     const nameIndex = headers.indexOf('nombre');
     const ingredientsIndex = headers.indexOf('ingredientes');
@@ -80,7 +83,9 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
       if (!name || !ingredients) {
         return null;
       }
-      return { name, ingredients };
+      // Fix: Explicitly type the returned object to match Omit<UserRecipe, 'id'>
+      const recipe: Omit<UserRecipe, 'id'> = { name, ingredients, category: 'Sin Clasificar' };
+      return recipe;
     }).filter((r): r is Omit<UserRecipe, 'id'> => r !== null);
   };
 
@@ -104,16 +109,29 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Recetas Familiares</h2>
         <form onSubmit={handleAddSubmit} className="p-4 border rounded-lg bg-gray-50 space-y-4">
           <h3 className="text-lg font-semibold text-gray-700">Añadir Nueva Receta</h3>
-          <div>
-            <label htmlFor="recipeName" className="block text-sm font-medium text-gray-700">Nombre de la Comida</label>
-            <input
-              id="recipeName"
-              type="text"
-              value={recipeName}
-              onChange={(e) => setRecipeName(e.target.value)}
-              placeholder="Ej: Lentejas de la abuela"
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="recipeName" className="block text-sm font-medium text-gray-700">Nombre de la Comida</label>
+              <input
+                id="recipeName"
+                type="text"
+                value={recipeName}
+                onChange={(e) => setRecipeName(e.target.value)}
+                placeholder="Ej: Lentejas de la abuela"
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700">Categoría</label>
+              <select
+                id="category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value as RecipeCategory)}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+              >
+                {recipeCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+            </div>
           </div>
           <div>
             <label htmlFor="ingredients" className="block text-sm font-medium text-gray-700">Ingredientes</label>
@@ -140,7 +158,7 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
           </label>
           <span className="ml-3 text-gray-600">{fileName || 'No se ha seleccionado ningún archivo'}</span>
         </div>
-        <p className="text-xs text-gray-500 mt-2">El CSV debe tener dos columnas: "nombre" e "ingredientes".</p>
+        <p className="text-xs text-gray-500 mt-2">El CSV debe tener las columnas "nombre" e "ingredientes". Las recetas importadas se guardarán como "Sin Clasificar".</p>
         {formError && <p className="text-red-500 text-sm mt-2">{formError}</p>}
       </div>
 
@@ -151,7 +169,7 @@ const RecipesTab: React.FC<RecipesTabProps> = ({ recipes, onAddRecipe, onDeleteR
             {recipes.map((recipe) => (
               <div key={recipe.id} className="p-3 border rounded-md flex justify-between items-center bg-gray-50">
                 <div>
-                  <p className="font-semibold text-gray-800">{recipe.name}</p>
+                  <p className="font-semibold text-gray-800">{recipe.name} <span className="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">{recipe.category}</span></p>
                   <p className="text-sm text-gray-600">{recipe.ingredients}</p>
                 </div>
                 <button 

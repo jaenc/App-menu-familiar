@@ -1,7 +1,8 @@
 import React from 'react';
-import type { MenuPlan } from '../types';
+import type { MenuPlan, SwappingMealInfo } from '../types';
 import { getFormattedDate } from '../utils/dateUtils';
 import SpinnerIcon from './icons/SpinnerIcon';
+import SwapIcon from './icons/SwapIcon';
 
 interface MenuDisplayProps {
   menuPlan: MenuPlan | null;
@@ -10,9 +11,10 @@ interface MenuDisplayProps {
   onSelectMeal: (mealName: string) => void;
   onGenerateShoppingList: () => void;
   onSaveMenu: (menuPlan: MenuPlan, startDate: string, endDate: string) => Promise<void>;
+  onInitiateSwap: (swapInfo: SwappingMealInfo) => void;
 }
 
-const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuPlan, isLoading, error, onSelectMeal, onGenerateShoppingList, onSaveMenu }) => {
+const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuPlan, isLoading, error, onSelectMeal, onGenerateShoppingList, onSaveMenu, onInitiateSwap }) => {
   const [isSaving, setIsSaving] = React.useState(false);
   const [justSaved, setJustSaved] = React.useState(false);
 
@@ -89,16 +91,17 @@ const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuPlan, isLoading, error, o
                   ${menuPlan[day].breakfast ? `
                     <div class="meal">
                       <p class="meal-title">DESAYUNO</p>
-                      <p class="meal-name">${menuPlan[day].breakfast}</p>
+                      {/* Fix: Access the .name property of the breakfast object to render it */}
+                      <p class="meal-name">${menuPlan[day].breakfast!.name}</p>
                     </div>
                   ` : ''}
                   <div class="meal">
                     <p class="meal-title">COMIDA</p>
-                    <p class="meal-name">${menuPlan[day].lunch}</p>
+                    <p class="meal-name">${menuPlan[day].lunch.name}</p>
                   </div>
                   <div class="meal">
                     <p class="meal-title">CENA</p>
-                    <p class="meal-name">${menuPlan[day].dinner}</p>
+                    <p class="meal-name">${menuPlan[day].dinner.name}</p>
                   </div>
                 </div>
               </div>
@@ -203,22 +206,34 @@ const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuPlan, isLoading, error, o
                   {menuPlan[day].breakfast && (
                     <div className="border-t pt-2">
                       <p className="text-xs font-semibold text-gray-500">DESAYUNO</p>
-                      <button onClick={() => onSelectMeal(menuPlan[day].breakfast!)} className="text-left text-sm text-indigo-600 hover:underline hover:text-indigo-800 transition-colors w-full">
-                        {menuPlan[day].breakfast}
-                      </button>
+                      <div className="flex justify-between items-start gap-1">
+                        <button onClick={() => onSelectMeal(menuPlan[day].breakfast!.name)} className="text-left text-sm text-indigo-600 hover:underline hover:text-indigo-800 transition-colors w-full">
+                          {menuPlan[day].breakfast!.name}
+                        </button>
+                      </div>
                     </div>
                   )}
                   <div className="border-t pt-2">
                     <p className="text-xs font-semibold text-gray-500">COMIDA</p>
-                    <button onClick={() => onSelectMeal(menuPlan[day].lunch)} className="text-left text-sm text-indigo-600 hover:underline hover:text-indigo-800 transition-colors w-full">
-                      {menuPlan[day].lunch}
-                    </button>
+                    <div className="flex justify-between items-start gap-1">
+                      <button onClick={() => onSelectMeal(menuPlan[day].lunch.name)} className="text-left text-sm text-indigo-600 hover:underline hover:text-indigo-800 transition-colors flex-grow">
+                        {menuPlan[day].lunch.name}
+                      </button>
+                      <button onClick={() => onInitiateSwap({ date: day, mealType: 'lunch', currentMeal: menuPlan[day].lunch })} className="text-gray-400 hover:text-indigo-600 p-1 rounded-full flex-shrink-0">
+                          <SwapIcon className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                    <div className="border-t pt-2">
                     <p className="text-xs font-semibold text-gray-500">CENA</p>
-                    <button onClick={() => onSelectMeal(menuPlan[day].dinner)} className="text-left text-sm text-indigo-600 hover:underline hover:text-indigo-800 transition-colors w-full">
-                      {menuPlan[day].dinner}
-                    </button>
+                    <div className="flex justify-between items-start gap-1">
+                      <button onClick={() => onSelectMeal(menuPlan[day].dinner.name)} className="text-left text-sm text-indigo-600 hover:underline hover:text-indigo-800 transition-colors flex-grow">
+                        {menuPlan[day].dinner.name}
+                      </button>
+                      <button onClick={() => onInitiateSwap({ date: day, mealType: 'dinner', currentMeal: menuPlan[day].dinner })} className="text-gray-400 hover:text-indigo-600 p-1 rounded-full flex-shrink-0">
+                          <SwapIcon className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -236,4 +251,4 @@ const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuPlan, isLoading, error, o
   );
 };
 
-export default MenuDisplay
+export default MenuDisplay;

@@ -1,10 +1,10 @@
-/// <reference types="vite/client" />
 
 import { GoogleGenAI, Type } from "@google/genai";
 import type { MenuPlan, Recipe, ShoppingListItem, Profile, UserRecipe } from '../types';
 
-// Initialize with the VITE_API_KEY from .env.local
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
+// Fix: Use process.env.API_KEY for the Gemini API key as per guidelines. This also resolves errors with import.meta.env.
+// Initialize with the API_KEY from .env
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
 const recipeGenerationSchema = {
     type: Type.OBJECT,
@@ -32,7 +32,7 @@ const recipeGenerationSchema = {
         motivationalComment: { type: Type.STRING, description: "A motivational comment about the recipe's benefits." }
     },
     required: ['name', 'ingredients', 'instructions', 'calories', 'nutritionalInfo', 'motivationalComment'],
-    propertyOrdering: ['name', 'ingredients', 'instructions', 'calories', 'nutritionalInfo', 'motivationalComment'],
+    propertyOrdering: ['name', 'ingredients', 'instructions', 'instructions', 'calories', 'nutritionalInfo', 'motivationalComment'],
 };
 
 const shoppingListSchema = {
@@ -48,6 +48,19 @@ const shoppingListSchema = {
         required: ['ingredient', 'quantity', 'unit', 'category'],
         propertyOrdering: ['ingredient', 'quantity', 'unit', 'category'],
     }
+};
+
+const mealDetailSchema = {
+    type: Type.OBJECT,
+    properties: {
+        name: { type: Type.STRING, description: "Concise name of the dish" },
+        category: {
+            type: Type.STRING,
+            description: "The primary category of the dish.",
+            enum: ['Arroces', 'Carnes', 'Pescados', 'Pastas', 'Legumbres', 'Verduras y Ensaladas', 'Cremas y Sopas', 'Otros', 'Desayuno']
+        }
+    },
+    required: ['name', 'category']
 };
 
 export async function generateMenuPlan(
@@ -66,16 +79,14 @@ export async function generateMenuPlan(
     }
 
     const mealProperties = {
-        lunch: { type: Type.STRING, description: "Name of the lunch dish" },
-        dinner: { type: Type.STRING, description: "Name of the dinner dish" }
+        lunch: mealDetailSchema,
+        dinner: mealDetailSchema,
     };
     const mealRequired = ['lunch', 'dinner'];
-    const mealOrdering = ['lunch', 'dinner'];
-
+    
     if (includeBreakfasts) {
-        mealProperties['breakfast'] = { type: Type.STRING, description: "Name of the breakfast dish" };
+        mealProperties['breakfast'] = mealDetailSchema;
         mealRequired.unshift('breakfast');
-        mealOrdering.unshift('breakfast');
     }
     
     const dynamicMenuSchema = {
@@ -84,13 +95,11 @@ export async function generateMenuPlan(
             acc[date] = {
                 type: Type.OBJECT,
                 properties: mealProperties,
-                required: mealRequired,
-                propertyOrdering: mealOrdering,
+                required: mealRequired
             };
             return acc;
         }, {} as any),
         required: dates,
-        propertyOrdering: dates,
     };
     
     const profileSummary = profiles.length > 0 
@@ -108,8 +117,9 @@ ${includeBreakfasts ? 'Include breakfast, lunch, and dinner.' : 'Include lunch a
 Base your suggestions on Mediterranean diet principles, prioritizing seasonal and local Spanish products.
 User preferences: "${preferences || 'No specific preferences'}".
 Also consider incorporating these user-provided favorite recipes if possible: ${userRecipeSummary}.
-For each meal, provide ONLY the concise name of the dish (e.g., "Pechuga de pollo a la plancha con pisto"). Do NOT add any extra descriptions or justifications in the meal plan output. The detailed recipe will be requested separately.
-Provide the output as a valid JSON object matching the requested schema. Only output the JSON.`;
+For each meal, provide an object with the concise name of the dish and its category from the provided enum.
+For breakfasts, always use the category 'Desayuno'. For other meals, classify them accurately (e.g., 'Lentejas con chorizo' is 'Legumbres', 'Paella de marisco' is 'Arroces').
+Do NOT add any extra descriptions. Provide the output as a valid JSON object matching the requested schema. Only output the JSON.`;
 
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -164,7 +174,7 @@ Provide the output as a valid JSON object matching the schema. Only output the J
 }
 
 export async function generateShoppingList(menuPlan: MenuPlan, profiles: Profile[]): Promise<ShoppingListItem[]> {
-    const mealList = Object.values(menuPlan).flatMap(day => [day.breakfast, day.lunch, day.dinner].filter(Boolean)).join(', ');
+    const mealList = Object.values(menuPlan).flatMap(day => [day.breakfast?.name, day.lunch.name, day.dinner.name].filter(Boolean)).join(', ');
     const profileCount = profiles.length || 1;
     
     const prompt = `You are an expert grocery shopper. Your responses must be exclusively in Spanish from Spain. 
